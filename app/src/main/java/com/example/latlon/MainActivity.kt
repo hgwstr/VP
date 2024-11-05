@@ -25,7 +25,6 @@ import android.location.Location
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
 import io.ktor.client.request.post
 import io.ktor.client.request.*
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -39,6 +38,9 @@ import io.ktor.http.contentType
 class MainActivity : ComponentActivity() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
 
+    private val _latitude = mutableStateOf(0.0)
+    private val _longitude = mutableStateOf(0.0)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -49,6 +51,8 @@ class MainActivity : ComponentActivity() {
             LatLonTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     LocationScreen(
+                        latitude = _latitude.value,
+                        longitude = _longitude.value,
                         modifier = Modifier.padding(innerPadding),
                         onRequestLocation = { getLocation() }
                     )
@@ -70,6 +74,8 @@ class MainActivity : ComponentActivity() {
             ) != PackageManager.PERMISSION_GRANTED
         ) {
             requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        } else {
+            getLocation()
         }
     }
 
@@ -80,9 +86,17 @@ class MainActivity : ComponentActivity() {
             location?.let {
                 val lat = it.latitude
                 val lon = it.longitude
+
+                // Обновляем состояние широты и долготы
+                _latitude.value = lat
+                _longitude.value = lon
+
+                // Отправляем данные на сервер
+                sendLocationToServer(lat, lon)
             }
         }
     }
+
     @Serializable
     data class LocationData(val latitude: Double, val longitude: Double)
 
@@ -99,7 +113,7 @@ class MainActivity : ComponentActivity() {
         // Используем lifecycleScope для запуска корутины
         lifecycleScope.launch {
             try {
-                client.post("http://127.0.0.1:8000/location/") {
+                client.post("http://192.168.0.110:8000/location/") {
                     contentType(ContentType.Application.Json)
                     setBody(LocationData(latitude, longitude))
                 }
@@ -113,45 +127,35 @@ class MainActivity : ComponentActivity() {
     }
 
 
-
     @Composable
-    fun updateUI(lat: Double, lon: Double) {
-        LocationScreen(lat = lat, lon = lon, onRequestLocation = { getLocation() })
-    }
-
-}
-
-@Composable
-fun LocationScreen(
-    lat: Double? = null,
-    lon: Double? = null,
-    modifier: Modifier = Modifier,
-    onRequestLocation: () -> Unit
-) {
-    var latitude by remember { mutableStateOf(lat ?: 0.0) }
-    var longitude by remember { mutableStateOf(lon ?: 0.0) }
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Center
+    fun LocationScreen(
+        latitude: Double,
+        longitude: Double,
+        modifier: Modifier = Modifier,
+        onRequestLocation: () -> Unit
     ) {
-        Text(text = "Latitude: $latitude")
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(text = "Longitude: $longitude")
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = { onRequestLocation() }) {
-            Text(text = "Get Location")
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(text = "Latitude: $latitude")
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = "Longitude: $longitude")
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = { onRequestLocation() }) {
+                Text(text = "Get Location")
+            }
         }
     }
-}
 
 
-@Preview(showBackground = true)
-@Composable
-fun LocationScreenPreview() {
-    LatLonTheme {
-        LocationScreen(lat = 0.0, lon = 0.0, onRequestLocation = {})
+    @Preview(showBackground = true)
+    @Composable
+    fun LocationScreenPreview() {
+        LatLonTheme {
+            LocationScreen(latitude = 0.0, longitude = 0.0, onRequestLocation = {})
+        }
     }
 }
