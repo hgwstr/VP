@@ -22,6 +22,19 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.tasks.Task
 import android.location.Location
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.post
+import io.ktor.client.request.*
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.logging.*
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 
 class MainActivity : ComponentActivity() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
@@ -70,6 +83,36 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+    @Serializable
+    data class LocationData(val latitude: Double, val longitude: Double)
+
+    private fun sendLocationToServer(latitude: Double, longitude: Double) {
+        val client = HttpClient {
+            install(ContentNegotiation) {
+                json(Json { ignoreUnknownKeys = true })
+            }
+            install(Logging) {
+                level = LogLevel.INFO
+            }
+        }
+
+        // Используем lifecycleScope для запуска корутины
+        lifecycleScope.launch {
+            try {
+                client.post("http://127.0.0.1:8000/location/") {
+                    contentType(ContentType.Application.Json)
+                    setBody(LocationData(latitude, longitude))
+                }
+            } catch (e: Exception) {
+                // Обработка ошибки при отправке данных
+                e.printStackTrace()
+            } finally {
+                client.close()
+            }
+        }
+    }
+
+
 
     @Composable
     fun updateUI(lat: Double, lon: Double) {
