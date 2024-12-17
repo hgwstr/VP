@@ -69,22 +69,37 @@ class MainActivity : ComponentActivity() {
         setContent {
             TestTheme {
                 val navController = rememberNavController()
+
+                // DSL для запуска логики геолокации и отправки данных
+                geolocationSession(
+                    locationAct = locationAct,
+                    webSocketAct = webSocketAct,
+                    cellInfoAct = cellInfoAct
+                ) {
+                    startLocationUpdates()
+                    periodicallySendData(intervalMillis = 5000) {
+                        sendToWebSocket()
+                    }
+                }
+
+                // UI: Scaffold с навигацией
                 Scaffold(
                     bottomBar = {
                         NavigationBar {
                             NavigationBarItem(
                                 icon = { Icon(Icons.Filled.LocationOn, contentDescription = null) },
-                                selected = false,
+                                selected = navController.currentDestination?.route == "location",
                                 onClick = { navController.navigate("location") }
                             )
                             NavigationBarItem(
                                 icon = { Icon(Icons.Filled.Home, contentDescription = null) },
-                                selected = false,
+                                selected = navController.currentDestination?.route == "map",
                                 onClick = { navController.navigate("map") }
                             )
                         }
                     }
                 ) { innerPadding ->
+                    // Навигация между экранами
                     NavHost(
                         navController = navController,
                         startDestination = "location",
@@ -109,8 +124,12 @@ class MainActivity : ComponentActivity() {
     fun MapScreen(locationAct: LocationAct, context: Context) {
         val latitude = locationAct.latitude.collectAsState().value
         val longitude = locationAct.longitude.collectAsState().value
-        val rsrp = cellInfoAct.getRsrp()
 
-        MapViewComposable(context = context, latitude = latitude, longitude = longitude, rsrp = rsrp)
+        if (latitude != null && longitude != null) {
+            MapViewComposable(context = context, latitude = latitude, longitude = longitude, rsrp = -85)
+        } else {
+            Text("Загрузка геолокации...", style = MaterialTheme.typography.bodyLarge)
+        }
     }
+
 }

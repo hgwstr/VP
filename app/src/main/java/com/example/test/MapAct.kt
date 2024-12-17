@@ -67,17 +67,17 @@ fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, r
                 }
             }
 
+            // Удаляем старые маркеры местоположений
+            mapView.overlays.removeAll { it is Marker && it.title.startsWith("Signal Strength") }
+
+            val currentZoom = mapView.zoomLevelDouble
             signalPoints.forEach { point ->
-                val exists = mapView.overlays.any { it is Marker && it.title == "Signal Strength: ${point.rsrp}" }
-                if (!exists) {
-                    val marker = Marker(mapView)
-                    marker.position = GeoPoint(point.latitude, point.longitude)
-                    marker.icon = mapRsrpToDrawable(context, point.rsrp)
-                    marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                    marker.title = "Signal Strength: ${point.rsrp}" // Используем title для идентификации маркеров
-                    mapView.overlays.add(marker)
-                    // marker.isFlat = true // не помогает
-                }
+                val marker = Marker(mapView)
+                marker.position = GeoPoint(point.latitude, point.longitude)
+                marker.icon = mapRsrpToDrawable(context, point.rsrp, currentZoom)
+                marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                marker.title = "Signal Strength: ${point.rsrp}"
+                mapView.overlays.add(marker)
             }
 
             if (latitude != null && longitude != null) {
@@ -99,19 +99,24 @@ fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, r
     )
 }
 
-fun mapRsrpToRadius(rsrp: Int): Dp {
-    return (100 - rsrp / 2).dp.coerceAtLeast(10.dp)
+// Обновленная функция для расчета радиуса, принимающая уровень зума
+fun mapRsrpToRadius(rsrp: Int, zoom: Double): Dp {
+    val baseRadius = (100 - rsrp).coerceAtLeast(100) // Базовый радиус
+    val adjustedRadius = baseRadius / (1 shl zoom.toInt()) // Делим на 2^уровеньЗума для уменьшения радиуса при увеличении зума
+    return adjustedRadius.dp.coerceAtLeast(100.dp)
 }
 
 fun mapRsrpToColor(rsrp: Int): Color {
-    val red = (255 * rsrp / 100.0).coerceAtMost(255.0).toInt()
-    val green = (255 * (100 - rsrp) / 100.0).coerceAtMost(255.0).toInt()
+    val maxRsrp = 100 // Это значение можно настроить на максимальный RSRP, который вы ожидаете
+    val red = (255 * (maxRsrp - rsrp)).coerceAtMost(255).toInt()
+    val green = (255 * (rsrp / maxRsrp.toDouble())).coerceAtMost(255.0).toInt()
     return Color(red, green, 0)
 }
 
-fun mapRsrpToDrawable(context: Context, rsrp: Int): android.graphics.drawable.Drawable {
+// Обновленная функция для возвращения Drawable
+fun mapRsrpToDrawable(context: Context, rsrp: Int, zoom: Double): android.graphics.drawable.Drawable {
     val color = mapRsrpToColor(rsrp)
-    val radius = mapRsrpToRadius(rsrp)
+    val radius = mapRsrpToRadius(rsrp, zoom)
 
     val oval = OvalShape()
     val shapeDrawable = ShapeDrawable(oval).apply {
@@ -121,4 +126,3 @@ fun mapRsrpToDrawable(context: Context, rsrp: Int): android.graphics.drawable.Dr
     }
     return shapeDrawable
 }
-
