@@ -30,6 +30,8 @@ import com.example.test.map.MapViewComposable
 import androidx.compose.runtime.collectAsState
 import org.osmdroid.config.Configuration
 
+import com.example.dsl.geolocationSession
+
 class MainActivity : ComponentActivity() {
     private lateinit var locationAct: LocationAct
     private lateinit var webSocketAct: WebSocketAct
@@ -112,4 +114,3 @@ class MainActivity : ComponentActivity() {
         MapViewComposable(context = context, latitude = latitude, longitude = longitude, rsrp = rsrp)
     }
 }
-
