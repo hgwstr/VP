@@ -41,12 +41,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         Configuration.getInstance().load(this, PreferenceManager.getDefaultSharedPreferences(this))
 
-        // Needed to get last known location
         locationAct = LocationAct(this, LocationServices.getFusedLocationProviderClient(this))
         webSocketAct = WebSocketAct(this)
         cellInfoAct = CellInfoAct(this)
 
-        // Request permissions to access geolocation
         val requestPermissionLauncher =
             registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
                 if (isGranted) {
@@ -54,7 +52,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-        // Checking permissions to access precise geolocation
         if (ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -63,13 +60,12 @@ class MainActivity : ComponentActivity() {
             requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         }
 
-        // Application will adapt to full screen mode
+        // Режим полного экрана
         enableEdgeToEdge()
 
         setContent {
             TestTheme {
                 val navController = rememberNavController()
-
                 // DSL для запуска логики геолокации и отправки данных
                 geolocationSession(
                     locationAct = locationAct,
@@ -81,8 +77,6 @@ class MainActivity : ComponentActivity() {
                         sendToWebSocket()
                     }
                 }
-
-                // UI: Scaffold с навигацией
                 Scaffold(
                     bottomBar = {
                         NavigationBar {

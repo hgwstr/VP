@@ -25,6 +25,7 @@ class GeolocationSession(
         }
     }
 
+
     fun sendToWebSocket() {
         webSocketAct.sendLocationData(locationAct)
     }
