@@ -65,17 +65,15 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             TestTheme {
-                // DSL для запуска геолокации, отправки данных и навигации
                 geolocationSession(
                     locationAct = locationAct,
                     webSocketAct = webSocketAct,
                     cellInfoAct = cellInfoAct
                 ) {
-                    startLocationUpdates() // Начинаем получать локацию
+                    startLocationUpdates()
                     periodicallySendData(intervalMillis = 5000){
                         sendToWebSocket()
-                    } // Отправляем данные каждые 5 секунд
-
+                    }
                     navigationUI {
                         bottomBar {
                             // Экран "Location"
@@ -86,14 +84,13 @@ class MainActivity : ComponentActivity() {
                                     lifecycleOwner = this@MainActivity
                                 )
                             }
-
                             // Экран "Map"
                             screen("map", Icons.Filled.Home) {
                                 MapScreen(locationAct = locationAct, context = this@MainActivity)
                             }
                         }
                     }
-                }.renderUI() // Теперь вызываем renderUI() корректно
+                }.RenderUI()
             }
         }
 

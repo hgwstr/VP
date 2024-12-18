@@ -52,7 +52,7 @@ class GeolocationSessionScope(
     }
 
     @Composable
-    fun renderUI() {
+    fun RenderUI() {
         navContent()
     }
 }
