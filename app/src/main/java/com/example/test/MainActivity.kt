@@ -65,54 +65,38 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             TestTheme {
-                val navController = rememberNavController()
-                // DSL для запуска логики геолокации и отправки данных
+                // DSL для запуска геолокации, отправки данных и навигации
                 geolocationSession(
                     locationAct = locationAct,
                     webSocketAct = webSocketAct,
                     cellInfoAct = cellInfoAct
                 ) {
-                    startLocationUpdates()
-                    periodicallySendData(intervalMillis = 5000) {
+                    startLocationUpdates() // Начинаем получать локацию
+                    periodicallySendData(intervalMillis = 5000){
                         sendToWebSocket()
-                    }
-                }
-                Scaffold(
-                    bottomBar = {
-                        NavigationBar {
-                            NavigationBarItem(
-                                icon = { Icon(Icons.Filled.LocationOn, contentDescription = null) },
-                                selected = navController.currentDestination?.route == "location",
-                                onClick = { navController.navigate("location") }
-                            )
-                            NavigationBarItem(
-                                icon = { Icon(Icons.Filled.Home, contentDescription = null) },
-                                selected = navController.currentDestination?.route == "map",
-                                onClick = { navController.navigate("map") }
-                            )
+                    } // Отправляем данные каждые 5 секунд
+
+                    navigationUI {
+                        bottomBar {
+                            // Экран "Location"
+                            screen("location", Icons.Filled.LocationOn) {
+                                Interface(
+                                    locationAct = locationAct,
+                                    webSocketAct = webSocketAct,
+                                    lifecycleOwner = this@MainActivity
+                                )
+                            }
+
+                            // Экран "Map"
+                            screen("map", Icons.Filled.Home) {
+                                MapScreen(locationAct = locationAct, context = this@MainActivity)
+                            }
                         }
                     }
-                ) { innerPadding ->
-                    // Навигация между экранами
-                    NavHost(
-                        navController = navController,
-                        startDestination = "location",
-                        Modifier.padding(innerPadding)
-                    ) {
-                        composable("location") {
-                            Interface(
-                                locationAct = locationAct,
-                                webSocketAct = webSocketAct,
-                                lifecycleOwner = this@MainActivity
-                            )
-                        }
-                        composable("map") {
-                            MapScreen(locationAct = locationAct, context = this@MainActivity)
-                        }
-                    }
-                }
+                }.renderUI() // Теперь вызываем renderUI() корректно
             }
         }
+
     }
     @Composable
     fun MapScreen(locationAct: LocationAct, context: Context) {
